@@ -1,99 +1,479 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><title>TechStore - Inventario</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TechStore - Inventario</title>
 <style>
-  body{font-family:Arial;background:#0f172a;color:#e2e8f0;display:flex;justify-content:center;padding:30px}
-  .card{background:#1e293b;padding:25px;border-radius:12px;width:360px;margin:10px}
-  h1{text-align:center;color:#38bdf8} h2{color:#38bdf8;margin-top:0}
-  input,select,button{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:none;box-sizing:border-box}
-  button{background:#38bdf8;color:#0f172a;font-weight:bold;cursor:pointer}
-  .g{background:#ea4335;color:#fff} .gh{background:#333;color:#fff}
-  .msg{margin-top:10px;font-size:14px} img{display:block;margin:10px auto}
-  .ok{background:#064e3b;color:#6ee7b7;padding:8px 12px;border-radius:6px;font-size:14px;text-align:center}
-  .fila{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #334155;font-size:14px}
-  .fila span:first-child{color:#94a3b8}
-  .jwt{background:#0f172a;padding:10px;border-radius:6px;font-family:monospace;font-size:11px;word-break:break-all;color:#facc15;margin-top:6px}
-  .lbl{color:#94a3b8;font-size:13px;margin-top:14px}
-  .oculto{display:none}
+  :root{
+    --bg:#0b1120; --card:#131c31; --card2:#1a2540; --borde:#24304d;
+    --texto:#e2e8f0; --suave:#8b9bb8; --acento:#38bdf8;
+    --ok:#34d399; --error:#f87171;
+    --admin:#a78bfa; --gerente:#38bdf8; --empleado:#34d399; --auditor:#fbbf24;
+    --rol:var(--acento);
+  }
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--texto);margin:0}
+  button,input,select{font:inherit}
+  .oculto{display:none!important}
+
+  /* ---------- Acceso ---------- */
+  .acceso{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 16px}
+  .marca{text-align:center;margin-bottom:24px}
+  .marca h1{margin:0;font-size:38px;color:var(--acento);letter-spacing:-1px}
+  .marca p{margin:6px 0 0;color:var(--suave)}
+  .cajas{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:flex-start}
+  .card{background:var(--card);border:1px solid var(--borde);border-radius:14px;padding:22px}
+  .auth{width:360px;max-width:100%}
+  .auth h2{margin:0 0 14px;color:var(--acento);font-size:22px}
+  .auth input,.auth button{width:100%}
+  input,select{background:#fff;color:#0f172a;border:1px solid transparent;border-radius:8px;padding:10px 12px;margin:5px 0}
+  input[readonly]{background:#2a3655;color:var(--suave);border-color:var(--borde)}
+  .btn{border:none;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--acento);color:#0b1120}
+  .btn:hover{filter:brightness(1.1)}
+  .btn.google{background:#ea4335;color:#fff} .btn.github{background:#2d333b;color:#fff}
+  .btn.gris{background:#2a3655;color:var(--texto)}
+  .btn.rojo{background:#ef4444;color:#fff}
+  .btn.chico{padding:6px 10px;font-size:12px;margin:2px}
+  .btn.lock{background:transparent;color:var(--suave);border:1px dashed #475569}
+  .auth .btn{margin-top:6px}
+  .msg{margin-top:10px;font-size:14px;min-height:18px}
+  .nota{font-size:12px;color:var(--suave);margin:4px 0}
+  .qr{display:block;margin:10px auto;border-radius:8px}
+
+  /* ---------- App ---------- */
+  .barra{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 24px;background:var(--card);border-bottom:3px solid var(--rol)}
+  .barra .logo{font-size:22px;font-weight:800;color:var(--acento)}
+  .barra .logo small{font-size:13px;color:var(--suave);font-weight:400;margin-left:8px}
+  .usuario{display:flex;align-items:center;gap:12px;font-size:14px}
+  .insignia{background:var(--rol);color:#0b1120;padding:4px 12px;border-radius:999px;font-weight:800;font-size:13px;white-space:nowrap}
+  main{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+  main .btn:not(.rojo):not(.lock):not(.gris){background:var(--rol)}
+
+  .perfil{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;border-left:5px solid var(--rol)}
+  .icono{width:58px;height:58px;border-radius:14px;background:var(--rol);color:#0b1120;display:flex;align-items:center;justify-content:center;font-size:28px}
+  .perfil h2{margin:0;font-size:22px;color:var(--rol)}
+  .perfil p{margin:6px 0 12px;color:var(--suave);font-size:14px}
+  .permisos{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid}
+  .chip.si{color:var(--ok);border-color:#1f6f55;background:#0f2a24}
+  .chip.no{color:var(--error);border-color:#6b2a2a;background:#2a1414}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}
+  .stat{background:var(--card);border:1px solid var(--borde);border-radius:12px;padding:14px}
+  .stat b{display:block;font-size:24px;margin-top:4px}
+  .stat span{color:var(--suave);font-size:13px}
+
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+  .tab{background:transparent;border:1px solid var(--borde);color:var(--suave);border-radius:999px;padding:8px 16px;cursor:pointer;font-weight:600}
+  .tab.activa{background:var(--rol);border-color:var(--rol);color:#0b1120}
+  .tab .candado{font-size:11px;margin-left:4px}
+
+  h3{margin:0 0 12px;font-size:17px}
+  .leyenda{font-size:12px;color:var(--suave);margin:8px 0 0}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:9px 8px;border-bottom:1px solid var(--borde);text-align:left;vertical-align:middle}
+  th{color:var(--suave);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  td input{width:90px;padding:6px 8px;margin:0}
+  tr.ajena td{opacity:.55}
+  .tienda-tag{font-size:12px;padding:3px 8px;border-radius:6px;background:var(--card2);color:var(--suave);white-space:nowrap}
+  .tienda-tag.mia{color:var(--rol);border:1px solid var(--rol)}
+  .scroll{overflow-x:auto}
+  .fila{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .fila input{flex:1;min-width:120px}
+  .bloque{margin-top:16px}
+
+  .reporte{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-top:12px}
+  .reporte .card{background:var(--card2)}
+  .reporte h4{margin:0 0 8px;color:var(--rol)}
+  .reporte div.linea{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}
+  .reporte div.linea span{color:var(--suave)}
+  .meta{font-size:12px;color:var(--suave);margin-top:10px}
+
+  .bloqueado{text-align:center;padding:30px 10px;color:var(--suave)}
+  .bloqueado .grande{font-size:40px}
+  .jwt{background:#0b1120;border:1px solid var(--borde);padding:12px;border-radius:8px;font-family:Menlo,monospace;font-size:11px;word-break:break-all;color:#facc15}
+  .dato{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--borde);font-size:14px}
+  .dato span{color:var(--suave)}
+  .estado-ok{color:var(--ok);font-weight:700}
+  .estado-mal{color:var(--error);font-weight:700}
+
+  .toast{position:fixed;right:20px;bottom:20px;max-width:380px;padding:14px 16px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:opacity .3s,transform .3s;z-index:10}
+  .toast.ok{background:#064e3b;color:#a7f3d0;border:1px solid #10b981}
+  .toast.error{background:#7f1d1d;color:#fecaca;border:1px solid #ef4444}
+  .toast.escondido{opacity:0;transform:translateY(10px);pointer-events:none}
+
+  @media (max-width:760px){ .stats{grid-template-columns:repeat(2,1fr)} .perfil{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
-<div>
-  <h1>TechStore</h1>
-  <div style="display:flex;flex-wrap:wrap;justify-content:center">
-    <div class="card" id="cajaRegistro">
+
+<!-- ================= ACCESO ================= -->
+<section id="vistaAcceso" class="acceso">
+  <div class="marca">
+    <h1>TechStore</h1>
+    <p>Sistema de Gestión de Inventario</p>
+  </div>
+  <div class="cajas">
+    <div class="card auth">
       <h2>Registro</h2>
       <input id="rNombre" placeholder="Nombre completo">
       <input id="rEmail" placeholder="Email">
       <input id="rPass" type="password" placeholder="Contraseña">
-      <input id="rTienda" placeholder="Tienda asignada">
-      <select id="rRol"><option>Administrador</option><option>Gerente</option><option selected>Empleado</option></select>
-      <button onclick="registrar()">Registrarse</button>
-      <div class="msg" id="rMsg"></div><img id="qr">
+      <div class="nota">Mínimo 8 caracteres, una mayúscula, un número y un carácter especial.</div>
+      <input id="rTienda" placeholder="Tienda asignada (ej. TechStore Lima)">
+      <div class="nota">El perfil lo asigna el Administrador del Sistema.</div>
+      <button class="btn" onclick="registrar()">Registrarse</button>
+      <div class="msg" id="rMsg"></div>
+      <img id="qr" class="qr">
     </div>
-    <div class="card" id="cajaLogin">
+    <div class="card auth">
       <h2>Iniciar sesión</h2>
       <input id="lEmail" placeholder="Email">
       <input id="lPass" type="password" placeholder="Contraseña">
-      <button onclick="iniciarSesion()">Ingresar</button>
-      <a href="/auth/google"><button class="g">Ingresar con Google</button></a>
-      <a href="/auth/github"><button class="gh">Ingresar con GitHub</button></a>
+      <button class="btn" onclick="iniciarSesion()">Ingresar</button>
+      <a href="/auth/google"><button class="btn google">Ingresar con Google</button></a>
+      <a href="/auth/github"><button class="btn github">Ingresar con GitHub</button></a>
       <div class="msg" id="lMsg"></div>
       <div id="cajaMfa" class="oculto">
-        <h2>Código MFA</h2>
-        <input id="codigo" placeholder="Código de 6 dígitos" maxlength="6">
-        <button onclick="verificarMfa()">Verificar</button>
+        <h2 style="margin-top:14px">Código MFA</h2>
+        <div class="nota">Abre Google Authenticator e ingresa el código de 6 dígitos.</div>
+        <input id="codigo" placeholder="000000" maxlength="6" inputmode="numeric">
+        <button class="btn" onclick="verificarMfa()">Verificar</button>
         <div class="msg" id="mMsg"></div>
       </div>
     </div>
-    <div class="card oculto" id="cajaPanel">
-      <h2>Panel de Inventario</h2>
-      <div class="ok">✔ Acceso concedido con MFA</div>
-      <div id="perfil"></div>
-      <div class="lbl">Token JWT</div>
-      <div class="jwt" id="jwt"></div>
-      <button onclick="location.href='/'">Cerrar sesión</button>
-    </div>
   </div>
-</div>
+</section>
+
+<!-- ================= PANEL ================= -->
+<section id="vistaApp" class="oculto">
+  <header class="barra">
+    <div class="logo">TechStore <small>Gestión de Inventario</small></div>
+    <div class="usuario">
+      <span id="uNombre"></span>
+      <span class="insignia" id="uRol"></span>
+      <button class="btn gris chico" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Perfil y permisos -->
+    <div class="card perfil">
+      <div class="icono" id="pIcono"></div>
+      <div>
+        <h2 id="pTitulo"></h2>
+        <p id="pDescripcion"></p>
+        <div class="permisos" id="pPermisos"></div>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="stats">
+      <div class="stat"><span>Productos</span><b id="sProductos">0</b></div>
+      <div class="stat"><span>Unidades en stock</span><b id="sUnidades">0</b></div>
+      <div class="stat"><span>Valor del inventario</span><b id="sValor">S/ 0</b></div>
+      <div class="stat"><span>Tiendas</span><b id="sTiendas">0</b></div>
+    </div>
+
+    <!-- Pestañas -->
+    <nav class="tabs" id="tabs"></nav>
+
+    <!-- Inventario -->
+    <div id="secInventario" class="card seccion">
+      <h3>Inventario de productos</h3>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>ID</th><th>Producto</th><th>Tienda</th><th>Precio (S/)</th><th>Stock</th><th>Acciones</th></tr></thead>
+          <tbody id="tablaProductos"></tbody>
+        </table>
+      </div>
+      <p class="leyenda">🔒 = acción no permitida para tu perfil. Si la intentas, el servidor la rechaza (control de acceso en el backend).</p>
+
+      <div class="bloque">
+        <h3>Nuevo producto</h3>
+        <div class="fila">
+          <input id="pNombre" placeholder="Nombre">
+          <input id="pTienda" placeholder="Tienda">
+          <input id="pPrecio" type="number" placeholder="Precio">
+          <input id="pStock" type="number" placeholder="Stock">
+          <button id="btnCrear" class="btn" onclick="crearProducto()">Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reportes -->
+    <div id="secReportes" class="card seccion oculto">
+      <h3>Reportes de inventario</h3>
+      <button id="btnReporte" class="btn" onclick="verReporte()">Generar reporte</button>
+      <div id="reporte"></div>
+    </div>
+
+    <!-- Usuarios -->
+    <div id="secUsuarios" class="card seccion oculto">
+      <h3>Gestión de usuarios y roles</h3>
+      <div id="usuariosContenido"></div>
+    </div>
+
+    <!-- Seguridad -->
+    <div id="secSeguridad" class="card seccion oculto">
+      <h3>Seguridad de la sesión</h3>
+      <div class="dato"><span>Email</span><b id="dEmail"></b></div>
+      <div class="dato"><span>Tienda asignada</span><b id="dTienda"></b></div>
+      <div class="dato"><span>Autenticación MFA</span><b id="dMfa"></b></div>
+      <div class="dato"><span>La sesión expira</span><b id="dExpira"></b></div>
+      <div class="bloque">
+        <h3>Token JWT</h3>
+        <div class="jwt" id="dJwt"></div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<div id="toast" class="toast escondido"></div>
+
 <script>
 const $ = (id) => document.getElementById(id);
-let tempToken = '';
-const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const soles = (n) => 'S/ ' + Number(n).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-async function registrar() {
-  const r = await post('/api/registro', { nombre: $('rNombre').value, email: $('rEmail').value, password: $('rPass').value, tienda: $('rTienda').value, rol: $('rRol').value });
-  $('rMsg').textContent = r.error || r.mensaje;
-  $('qr').src = r.qr || '';
+// ---------- Perfiles del caso TechStore ----------
+const PERFILES = {
+  'Administrador del Sistema': {
+    color: 'var(--admin)', icono: '🛡️',
+    descripcion: 'Gestiona usuarios y roles, configuración completa del sistema, acceso total a todas las funcionalidades.',
+    puede: { crear: 'todas', editarPrecio: 'todas', editarStock: 'todas', eliminar: 'todas', reportes: 'todas', usuarios: true }
+  },
+  'Gerente de Tienda': {
+    color: 'var(--gerente)', icono: '🏬',
+    descripcion: 'Gestiona productos de su tienda, visualiza reportes de su ubicación, no puede eliminar productos de otras tiendas.',
+    puede: { crear: 'propia', editarPrecio: 'propia', editarStock: 'propia', eliminar: 'propia', reportes: 'propia', usuarios: false }
+  },
+  'Empleado de Ventas': {
+    color: 'var(--empleado)', icono: '🧾',
+    descripcion: 'Consulta productos, actualiza stock en tiempo real, no puede modificar precios.',
+    puede: { crear: false, editarPrecio: false, editarStock: 'todas', eliminar: false, reportes: false, usuarios: false }
+  },
+  'Auditor': {
+    color: 'var(--auditor)', icono: '🔍',
+    descripcion: 'Solo lectura de todos los datos, genera reportes, sin permisos de modificación.',
+    puede: { crear: false, editarPrecio: false, editarStock: false, eliminar: false, reportes: 'todas', usuarios: false }
+  }
+};
+const ROLES = Object.keys(PERFILES);
+
+let tempToken = '', token = '', yo = null, perfil = null, productos = [];
+
+// ---------- Utilidades ----------
+const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+const api = (url, method = 'GET', body) => fetch(url, {
+  method, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+  body: body ? JSON.stringify(body) : undefined
+}).then((r) => r.json());
+
+let timer;
+function aviso(r) {
+  const t = $('toast');
+  t.className = 'toast ' + (r.error ? 'error' : 'ok');
+  t.textContent = r.error ? '✖ ' + r.error : '✔ ' + (r.mensaje || 'Operación exitosa');
+  clearTimeout(timer);
+  timer = setTimeout(() => t.classList.add('escondido'), 4000);
+}
+// ¿Puede el usuario actual hacer "accion" sobre un producto de "tienda"? (solo para el diseño; el servidor vuelve a validar)
+function permitido(accion, tienda) {
+  const p = perfil.puede[accion];
+  if (p === 'todas' || p === true) return true;
+  if (p === 'propia') return tienda === undefined || tienda === yo.tienda;
+  return false;
 }
 
+// ---------- Registro / Login / MFA ----------
+async function registrar() {
+  const r = await post('/api/registro', { nombre: $('rNombre').value, email: $('rEmail').value, password: $('rPass').value, tienda: $('rTienda').value });
+  $('rMsg').textContent = r.error || r.mensaje;
+  $('rMsg').style.color = r.error ? 'var(--error)' : 'var(--ok)';
+  $('qr').src = r.qr || '';
+}
 async function iniciarSesion() {
   const r = await post('/api/login', { email: $('lEmail').value, password: $('lPass').value });
   $('lMsg').textContent = r.error || r.mensaje;
-  if (r.tempToken) { tempToken = r.tempToken; $('cajaMfa').classList.remove('oculto'); }
+  $('lMsg').style.color = r.error ? 'var(--error)' : 'var(--ok)';
+  if (r.tempToken) { tempToken = r.tempToken; $('cajaMfa').classList.remove('oculto'); $('codigo').focus(); }
 }
-
 async function verificarMfa() {
   const r = await post('/api/mfa', { tempToken, codigo: $('codigo').value });
   $('mMsg').textContent = r.error || r.mensaje;
-  if (r.token) mostrarPanel(r.token);
+  $('mMsg').style.color = r.error ? 'var(--error)' : 'var(--ok)';
+  if (r.token) entrar(r.token);
+}
+function cerrarSesion() { location.href = '/'; }
+
+// ---------- Panel ----------
+async function entrar(t) {
+  token = t;
+  const r = await api('/api/perfil');
+  if (r.error) { alert(r.error); location.href = '/'; return; }
+  yo = r.usuario;
+  perfil = PERFILES[yo.rol] || PERFILES['Empleado de Ventas'];
+  document.documentElement.style.setProperty('--rol', perfil.color);
+  history.replaceState(null, '', '/');
+
+  $('vistaAcceso').classList.add('oculto');
+  $('vistaApp').classList.remove('oculto');
+  $('uNombre').textContent = yo.nombre;
+  $('uRol').textContent = yo.rol;
+  $('pIcono').textContent = perfil.icono;
+  $('pTitulo').textContent = yo.rol;
+  $('pDescripcion').textContent = perfil.descripcion;
+
+  const alcance = (v) => (v === 'propia' ? ' (su tienda)' : '');
+  const lista = [
+    ['Consultar productos', true, ''],
+    ['Crear productos', perfil.puede.crear, alcance(perfil.puede.crear)],
+    ['Modificar precios', perfil.puede.editarPrecio, alcance(perfil.puede.editarPrecio)],
+    ['Actualizar stock', perfil.puede.editarStock, alcance(perfil.puede.editarStock)],
+    ['Eliminar productos', perfil.puede.eliminar, alcance(perfil.puede.eliminar)],
+    ['Generar reportes', perfil.puede.reportes, alcance(perfil.puede.reportes)],
+    ['Gestionar usuarios y roles', perfil.puede.usuarios, '']
+  ];
+  $('pPermisos').innerHTML = lista.map(([n, ok, a]) => `<span class="chip ${ok ? 'si' : 'no'}">${ok ? '✔' : '✖'} ${n}${a}</span>`).join('');
+
+  $('dEmail').textContent = yo.email;
+  $('dTienda').textContent = yo.tienda;
+  $('dMfa').innerHTML = yo.mfa ? '<span class="estado-ok">Verificada</span>' : '<span class="estado-mal">Pendiente</span>';
+  $('dExpira').textContent = new Date(yo.exp * 1000).toLocaleString('es-PE');
+  $('dJwt').textContent = token;
+
+  const tabs = [
+    ['Inventario', 'secInventario', true],
+    ['Reportes', 'secReportes', !!perfil.puede.reportes],
+    ['Usuarios y roles', 'secUsuarios', perfil.puede.usuarios],
+    ['Seguridad', 'secSeguridad', true]
+  ];
+  $('tabs').innerHTML = tabs.map(([n, id, ok], i) =>
+    `<button class="tab ${i === 0 ? 'activa' : ''}" onclick="abrir('${id}', this)">${n}${ok ? '' : '<span class="candado">🔒</span>'}</button>`).join('');
+
+  // Formulario de nuevo producto según el perfil
+  const puedeCrear = permitido('crear');
+  $('btnCrear').className = puedeCrear ? 'btn' : 'btn lock';
+  $('btnCrear').textContent = puedeCrear ? 'Agregar' : '🔒 Agregar';
+  if (perfil.puede.crear === 'propia') { $('pTienda').value = yo.tienda; $('pTienda').readOnly = true; }
+  if (!puedeCrear) ['pNombre', 'pTienda', 'pPrecio', 'pStock'].forEach((i) => ($(i).readOnly = true));
+  $('btnReporte').className = perfil.puede.reportes ? 'btn' : 'btn lock';
+  $('btnReporte').textContent = perfil.puede.reportes ? 'Generar reporte' : '🔒 Generar reporte';
+
+  pintarUsuarios();
+  cargarProductos();
 }
 
-async function mostrarPanel(token) {
-  const r = await fetch('/api/perfil', { headers: { Authorization: 'Bearer ' + token } }).then(r => r.json());
-  $('cajaRegistro').classList.add('oculto');
-  $('cajaLogin').classList.add('oculto');
-  $('cajaPanel').classList.remove('oculto');
-  const u = r.usuario;
-  const fila = (k, v) => `<div class="fila"><span>${k}</span><span>${v}</span></div>`;
-  $('perfil').innerHTML = fila('Nombre', u.nombre) + fila('Email', u.email) + fila('Rol', u.rol) + fila('Tienda', u.tienda)
-    + fila('MFA verificado', u.mfa ? 'Sí' : 'No') + fila('Expira', new Date(u.exp * 1000).toLocaleString());
-  $('jwt').textContent = token;
+function abrir(id, boton) {
+  document.querySelectorAll('.seccion').forEach((s) => s.classList.add('oculto'));
+  $(id).classList.remove('oculto');
+  document.querySelectorAll('.tab').forEach((t) => t.classList.remove('activa'));
+  boton.classList.add('activa');
+  if (id === 'secUsuarios' && perfil.puede.usuarios) verUsuarios();
 }
 
+// ---------- Inventario ----------
+async function cargarProductos() {
+  productos = await api('/api/productos');
+  if (productos.error) { aviso(productos); return; }
+  $('sProductos').textContent = productos.length;
+  $('sUnidades').textContent = productos.reduce((a, p) => a + p.stock, 0);
+  $('sValor').textContent = soles(productos.reduce((a, p) => a + p.precio * p.stock, 0));
+  $('sTiendas').textContent = new Set(productos.map((p) => p.tienda)).size;
+
+  $('tablaProductos').innerHTML = productos.map((p) => {
+    const mia = p.tienda === yo.tienda;
+    const okPrecio = permitido('editarPrecio', p.tienda);
+    const okStock = permitido('editarStock', p.tienda);
+    const okGuardar = okPrecio || okStock;
+    const okEliminar = permitido('eliminar', p.tienda);
+    const ajena = perfil.puede.editarPrecio === 'propia' && !mia;
+    return `<tr class="${ajena ? 'ajena' : ''}">
+      <td>${p.id}</td>
+      <td>${esc(p.nombre)}</td>
+      <td><span class="tienda-tag ${mia ? 'mia' : ''}">${esc(p.tienda)}</span></td>
+      <td><input id="precio${p.id}" type="number" value="${p.precio}" ${okPrecio ? '' : 'readonly'}></td>
+      <td><input id="stock${p.id}" type="number" value="${p.stock}" ${okStock ? '' : 'readonly'}></td>
+      <td>
+        <button class="btn chico ${okGuardar ? '' : 'lock'}" onclick="actualizar(${p.id})">${okGuardar ? 'Guardar' : '🔒 Guardar'}</button>
+        <button class="btn chico ${okEliminar ? 'rojo' : 'lock'}" onclick="eliminar(${p.id})">${okEliminar ? 'Eliminar' : '🔒 Eliminar'}</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+// Se envía al servidor aunque esté bloqueado: así se demuestra que el backend también lo rechaza
+async function actualizar(id) {
+  const r = await api('/api/productos/' + id, 'PUT', { precio: $('precio' + id).value, stock: $('stock' + id).value });
+  aviso(r); cargarProductos();
+}
+async function eliminar(id) {
+  const r = await api('/api/productos/' + id, 'DELETE');
+  aviso(r); cargarProductos();
+}
+async function crearProducto() {
+  const r = await api('/api/productos', 'POST', { nombre: $('pNombre').value, tienda: $('pTienda').value, precio: $('pPrecio').value, stock: $('pStock').value });
+  aviso(r);
+  if (!r.error) ['pNombre', 'pPrecio', 'pStock'].forEach((i) => ($(i).value = ''));
+  cargarProductos();
+}
+
+// ---------- Reportes ----------
+async function verReporte() {
+  const r = await api('/api/reportes');
+  if (r.error) { aviso(r); $('reporte').innerHTML = ''; return; }
+  aviso({ mensaje: 'Reporte generado' });
+  const tiendas = Object.entries(r.porTienda);
+  $('reporte').innerHTML = `<div class="reporte">${tiendas.map(([t, d]) => `
+    <div class="card"><h4>${esc(t)}</h4>
+      <div class="linea"><span>Productos</span><b>${d.productos}</b></div>
+      <div class="linea"><span>Unidades</span><b>${d.unidades}</b></div>
+      <div class="linea"><span>Valor</span><b>${soles(d.valorInventario)}</b></div>
+    </div>`).join('')}</div>
+    <div class="meta">Generado por ${esc(r.generadoPor)} (${esc(r.rol)}) · ${esc(r.fecha)}</div>`;
+}
+
+// ---------- Usuarios ----------
+function pintarUsuarios() {
+  if (!perfil.puede.usuarios) {
+    $('usuariosContenido').innerHTML = `<div class="bloqueado"><div class="grande">🔒</div>
+      <p>Solo el <b>Administrador del Sistema</b> puede gestionar usuarios y roles.</p>
+      <button class="btn lock" onclick="intentarUsuarios()">Intentar acceder</button></div>`;
+  }
+}
+async function intentarUsuarios() { aviso(await api('/api/usuarios')); }
+async function verUsuarios() {
+  const r = await api('/api/usuarios');
+  if (r.error) { aviso(r); return; }
+  $('usuariosContenido').innerHTML = `<div class="scroll"><table>
+    <thead><tr><th>Nombre</th><th>Email</th><th>Acceso</th><th>Perfil</th><th>Tienda</th><th>Estado</th><th></th></tr></thead>
+    <tbody>${r.map((u, i) => `<tr>
+      <td>${esc(u.nombre)}</td><td>${esc(u.email)}</td>
+      <td><span class="tienda-tag">${esc(u.proveedor)}</span></td>
+      <td><select id="urol${i}">${ROLES.map((x) => `<option ${x === u.rol ? 'selected' : ''}>${x}</option>`).join('')}</select></td>
+      <td><input id="utienda${i}" value="${esc(u.tienda)}" style="width:140px"></td>
+      <td>${u.bloqueado ? '<span class="estado-mal">Bloqueado</span>' : '<span class="estado-ok">Activo</span>'}</td>
+      <td><button class="btn chico" onclick="guardarUsuario('${esc(u.email)}',${i})">Guardar</button>
+        ${u.bloqueado ? `<button class="btn chico gris" onclick="desbloquear('${esc(u.email)}')">Desbloquear</button>` : ''}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+async function guardarUsuario(email, i) {
+  const r = await api('/api/usuarios/' + encodeURIComponent(email), 'PUT', { rol: $('urol' + i).value, tienda: $('utienda' + i).value });
+  aviso(r); verUsuarios();
+}
+async function desbloquear(email) {
+  const r = await api('/api/usuarios/' + encodeURIComponent(email), 'PUT', { desbloquear: true });
+  aviso(r); verUsuarios();
+}
+
+// Enter para enviar
+$('lPass').addEventListener('keydown', (e) => e.key === 'Enter' && iniciarSesion());
+$('codigo').addEventListener('keydown', (e) => e.key === 'Enter' && verificarMfa());
+
+// Regreso del login con Google / GitHub
 const t = new URLSearchParams(location.search).get('token');
-if (t) mostrarPanel(t);
+if (t) entrar(t);
 </script>
 </body>
 </html>
