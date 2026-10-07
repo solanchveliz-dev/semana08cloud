@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><title>TechStore - Inventario</title>
+<style>
+  body{font-family:Arial;background:#0f172a;color:#e2e8f0;display:flex;justify-content:center;padding:30px}
+  .card{background:#1e293b;padding:25px;border-radius:12px;width:360px;margin:10px}
+  h1{text-align:center;color:#38bdf8} h2{color:#38bdf8;margin-top:0}
+  input,select,button{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:none;box-sizing:border-box}
+  button{background:#38bdf8;color:#0f172a;font-weight:bold;cursor:pointer}
+  .g{background:#ea4335;color:#fff} .gh{background:#333;color:#fff}
+  .msg{margin-top:10px;font-size:14px} img{display:block;margin:10px auto}
+  .ok{background:#064e3b;color:#6ee7b7;padding:8px 12px;border-radius:6px;font-size:14px;text-align:center}
+  .fila{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #334155;font-size:14px}
+  .fila span:first-child{color:#94a3b8}
+  .jwt{background:#0f172a;padding:10px;border-radius:6px;font-family:monospace;font-size:11px;word-break:break-all;color:#facc15;margin-top:6px}
+  .lbl{color:#94a3b8;font-size:13px;margin-top:14px}
+  .oculto{display:none}
+</style>
+</head>
+<body>
+<div>
+  <h1>TechStore</h1>
+  <div style="display:flex;flex-wrap:wrap;justify-content:center">
+    <div class="card" id="cajaRegistro">
+      <h2>Registro</h2>
+      <input id="rNombre" placeholder="Nombre completo">
+      <input id="rEmail" placeholder="Email">
+      <input id="rPass" type="password" placeholder="Contraseña">
+      <input id="rTienda" placeholder="Tienda asignada">
+      <select id="rRol"><option>Administrador</option><option>Gerente</option><option selected>Empleado</option></select>
+      <button onclick="registrar()">Registrarse</button>
+      <div class="msg" id="rMsg"></div><img id="qr">
+    </div>
+    <div class="card" id="cajaLogin">
+      <h2>Iniciar sesión</h2>
+      <input id="lEmail" placeholder="Email">
+      <input id="lPass" type="password" placeholder="Contraseña">
+      <button onclick="iniciarSesion()">Ingresar</button>
+      <a href="/auth/google"><button class="g">Ingresar con Google</button></a>
+      <a href="/auth/github"><button class="gh">Ingresar con GitHub</button></a>
+      <div class="msg" id="lMsg"></div>
+      <div id="cajaMfa" class="oculto">
+        <h2>Código MFA</h2>
+        <input id="codigo" placeholder="Código de 6 dígitos" maxlength="6">
+        <button onclick="verificarMfa()">Verificar</button>
+        <div class="msg" id="mMsg"></div>
+      </div>
+    </div>
+    <div class="card oculto" id="cajaPanel">
+      <h2>Panel de Inventario</h2>
+      <div class="ok">✔ Acceso concedido con MFA</div>
+      <div id="perfil"></div>
+      <div class="lbl">Token JWT</div>
+      <div class="jwt" id="jwt"></div>
+      <button onclick="location.href='/'">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+let tempToken = '';
+const post = (url, body) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+
+async function registrar() {
+  const r = await post('/api/registro', { nombre: $('rNombre').value, email: $('rEmail').value, password: $('rPass').value, tienda: $('rTienda').value, rol: $('rRol').value });
+  $('rMsg').textContent = r.error || r.mensaje;
+  $('qr').src = r.qr || '';
+}
+
+async function iniciarSesion() {
+  const r = await post('/api/login', { email: $('lEmail').value, password: $('lPass').value });
+  $('lMsg').textContent = r.error || r.mensaje;
+  if (r.tempToken) { tempToken = r.tempToken; $('cajaMfa').classList.remove('oculto'); }
+}
+
+async function verificarMfa() {
+  const r = await post('/api/mfa', { tempToken, codigo: $('codigo').value });
+  $('mMsg').textContent = r.error || r.mensaje;
+  if (r.token) mostrarPanel(r.token);
+}
+
+async function mostrarPanel(token) {
+  const r = await fetch('/api/perfil', { headers: { Authorization: 'Bearer ' + token } }).then(r => r.json());
+  $('cajaRegistro').classList.add('oculto');
+  $('cajaLogin').classList.add('oculto');
+  $('cajaPanel').classList.remove('oculto');
+  const u = r.usuario;
+  const fila = (k, v) => `<div class="fila"><span>${k}</span><span>${v}</span></div>`;
+  $('perfil').innerHTML = fila('Nombre', u.nombre) + fila('Email', u.email) + fila('Rol', u.rol) + fila('Tienda', u.tienda)
+    + fila('MFA verificado', u.mfa ? 'Sí' : 'No') + fila('Expira', new Date(u.exp * 1000).toLocaleString());
+  $('jwt').textContent = token;
+}
+
+const t = new URLSearchParams(location.search).get('token');
+if (t) mostrarPanel(t);
+</script>
+</body>
+</html>
